@@ -1,0 +1,16 @@
+{
+    "name": "inventory/php-api",
+    "description": "Inventory assignment for webdevs ltd",
+    "version": "0.0.1",
+    "type": "library",
+    "time": "2021-4-24",
+    "keywords": ["API", "inventory"],
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {"App\\": "src/"}
+    },
+    "require": {
+        "php": ">=5.3.3",
+        "firebase/php-jwt": "^5.2"
+    }
+}
