@@ -1,6 +1,7 @@
 <?php
 namespace App;
 use \Firebase\JWT\JWT;
+use App\Common;
 class DBConn
 {
 
@@ -21,10 +22,32 @@ class DBConn
         }
         $this->connection->set_charset($charset);
     }
-    public function getCategories(){
-        $sql="select * from inventory_categories where status=1 and root_id=0";
+    public function getInfo($table,$col){
+        $whereCol="1";
+        if(!empty($col)){
+            foreach ($col as $key => $val){
+                $whereCol=$whereCol." and ".$key."='".$val."' ";
+            }
+        }
+        $sql="select * from ".$table." where ".$whereCol."";
         $result_data = $this->connection->query($sql)->fetch_assoc();
         return $result_data;
+    }
+
+    public function getProducts(){
+        $sql="select p.*,c.`category_name`  from products as p join
+             inventory_categories as c on p.category_id=c.id where p.status=1";
+        $result_data = $this->connection->query($sql)->fetch_assoc();
+        return $result_data;
+    }
+    public function getCategories(){
+        $sql="select * from inventory_categories where status=1 and root_id=0";
+        $result_data = $this->connection->query($sql);
+        while($row = $result_data->fetch_assoc())
+        {
+            $rows[] = $row;
+        }
+        return $rows;
     }
     public function myOrders($uid,$type){
         $sql="select * from inventory_categories where status=1 and root_id=0";
@@ -39,14 +62,13 @@ class DBConn
         if (!empty($result_data["id"]))
         {
             $result_data;$msg="Success";$status=1;
-            $key = "amincpi";
             $payload = array(
                 "uid" => $result_data["id"]
             );
             $data=array(
                 "role_id" => $result_data["role_id"],
                 "name" => $result_data["name"],
-                "token_id" => JWT::encode($payload, $key),
+                "token_id" => Common::encrypttData($payload),
                 "orders" => self::myOrders($result_data["id"],$result_data["role_id"]),
             );
 
