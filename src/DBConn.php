@@ -22,23 +22,55 @@ class DBConn
         }
         $this->connection->set_charset($charset);
     }
-    public function getInfo($table,$col){
-        $whereCol="1";
+    public function saveProduct($sql){
+        $this->connection->query($sql);
+    }
+
+    public function updateTableData($table,$colUpdate=null,$colWhereParams=null){
+        $whereCol="1";$defColUpdate="";
+        if(!empty($colWhereParams)){
+            foreach ($colWhereParams as $key => $val){
+                $whereCol=$whereCol." and ".$key."='".$val."' ";
+            }
+        }
+        $araUpdateCol=array();
+        if(!empty($colUpdate)){
+            foreach ($colUpdate as $key => $val){
+                $araUpdateCol[]=" ".$key."='".$val."'";
+            }
+        }
+        $araUpdateCol=implode(',',$araUpdateCol);
+        $sql="update ".$table."  set ".$araUpdateCol." where ".$whereCol."";
+        //return $sql;
+        $status=$this->connection->query($sql);
+        return $status;
+    }
+    public function getInfo($table,$col=null,$colNotIn=null){
+        $whereCol="1";$def_not_in="";
         if(!empty($col)){
             foreach ($col as $key => $val){
                 $whereCol=$whereCol." and ".$key."='".$val."' ";
             }
         }
-        $sql="select * from ".$table." where ".$whereCol."";
+        if(!empty($colNotIn)){
+            foreach ($colNotIn as $key => $val) {
+                $def_not_in = $def_not_in . " and " . $key . " not in (" . $val . ") ";
+            }
+        }
+        $sql="select * from ".$table." where ".$whereCol." ".$def_not_in." ";
         $result_data = $this->connection->query($sql)->fetch_assoc();
         return $result_data;
     }
-
     public function getProducts(){
         $sql="select p.*,c.`category_name`  from products as p join
-             inventory_categories as c on p.category_id=c.id where p.status=1";
-        $result_data = $this->connection->query($sql)->fetch_assoc();
-        return $result_data;
+             inventory_categories as c on p.category_id=c.id where p.status=1 and p.trash=1";
+        $result_data = $this->connection->query($sql);
+        $rows=[];
+        while($row = $result_data->fetch_assoc())
+        {
+            $rows[] = $row;
+        }
+        return $rows;
     }
     public function getCategories(){
         $sql="select * from inventory_categories where status=1 and root_id=0";
@@ -57,13 +89,15 @@ class DBConn
     public function isValidLogin($sql){
         $data=array(
             "token_id" => 0,
+            "role_id" => 0,
         );
         $result_data = $this->connection->query($sql)->fetch_assoc();
         if (!empty($result_data["id"]))
         {
             $result_data;$msg="Success";$status=1;
             $payload = array(
-                "uid" => $result_data["id"]
+                "uid" => $result_data["id"],
+                "role_id" => $result_data["role_id"],
             );
             $data=array(
                 "role_id" => $result_data["role_id"],

@@ -1,7 +1,7 @@
 <?php
 
-use App\Common;
-require '../../../vendor/autoload.php';
+    use App\Common;
+    require '../../../vendor/autoload.php';
     $comm=new Common();
     $returnInfo=array(
         "categories" => array(),
@@ -16,7 +16,9 @@ require '../../../vendor/autoload.php';
         if(!empty($info)){
             $info["status"]=1;
             $info["msg"]="success";
+            $info["imgProductUrl"]=Common::productImgUrl();
             $returnInfo=$info;
         }
     }
+
     echo json_encode($returnInfo);
