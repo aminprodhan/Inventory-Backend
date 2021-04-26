@@ -42,15 +42,61 @@ class DBConn
     public function saveProduct($sql){
         $this->connection->query($sql);
     }
+    public function updateMyOrderStatus($tokenInfo,$info){
+        $status=$info->statusId;$inv_id=$info->item["id"];
+        $sql="update orders set order_status=? where id=?";
+        $stmt =$this->connection->prepare($sql);
+        $stmt->execute([$status,$inv_id]);
+        $stmt=null;
+        return self::getMyOrders($tokenInfo);
+
+
+    }
+    public function getOrderStatuses(){
+        $sql="select * from order_status_details order by sort_id asc";
+        $stmt =$this->connection->prepare($sql);
+        $stmt->execute();
+        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt=null;$rows=[];
+        foreach($result_data as $row)
+            $rows[] = $row;
+        return $rows;
+    }
+    public function getMyOrders($uInfo){
+        $sql="select o.*,s.name as status_name from orders as o 
+                join order_status_details as s on o.order_status=s.id order by o.id desc";
+        if($uInfo->role_id == 2) {
+            $sql = "select o.*,s.name as status_name from orders as o 
+                        join order_status_details as s on o.order_status=s.id
+                            where o.customer_id= ? order by o.id desc";
+        }
+        $stmt =$this->connection->prepare($sql);
+        if($uInfo->role_id == 2)
+            $stmt->execute([$uInfo->uid]);
+        else
+            $stmt->execute();
+        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt=null;
+        $rows=[];$todaysOrder=[];$araStatus=[];
+        foreach($result_data as $row)
+            {
+                $araStatus[$row["order_status"]][]=$row;
+                $rows[] = $row;
+                if(Common::convertDateTimeToDate($row["created_at"]) == Common::getCurrentDate())
+                    $todaysOrder[]=$row;
+            }
+        $ara=["all" => $rows,"todays"=>$todaysOrder,"order_by_status" => $araStatus];
+        return $ara;
+    }
     public function makeOrder($uInfo,$order_info){
         $cid=$uInfo->uid;
-        $pid=$order_info->item["id"];$qty=$order_info->qty;
+        $pid=$order_info->item["id"];$qty=$order_info->qty;$price=$order_info->item["price"];
         $cdate=Common::getCurrentDateTime();
-        $order_id=strtotime($cdate).$cid;
+        $order_id=$cid.strtotime($cdate);
         $stmt =$this->connection->prepare("INSERT INTO orders (customer_id, order_id,
-                                                product_id,qty,created_at) VALUES (?,?,?,?,?)");
+                                                product_id,qty,price,created_at) VALUES (?,?,?,?,?,?)");
 
-        $stmt->execute([$cid, $order_id,$pid,$qty,$cdate]);
+        $stmt->execute([$cid, $order_id,$pid,$qty,$price,$cdate]);
         $stmt=null;
         return 1;
     }
@@ -120,12 +166,16 @@ class DBConn
         $result_data = $this->connection->query($sql)->fetch_assoc();
         return $result_data;
     }
-    public function isValidLogin($sql){
+    public function isValidLogin($username,$password){
         $data=array(
             "token_id" => 0,
             "role_id" => 0,
         );
-        $result_data = $this->connection->query($sql)->fetch_assoc();
+        $sql = "SELECT * FROM `users` WHERE status=? and user_name=? and password=?";
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute([1,$username,$password]);
+        $result_data=$stmt->fetch();
+        $stmt=null;
         if (!empty($result_data["id"]))
         {
             $result_data;$msg="Success";$status=1;
@@ -137,7 +187,7 @@ class DBConn
                 "role_id" => $result_data["role_id"],
                 "name" => $result_data["name"],
                 "token_id" => Common::encrypttData($payload),
-                "orders" => self::myOrders($result_data["id"],$result_data["role_id"]),
+                //"orders" => self::myOrders($result_data["id"],$result_data["role_id"]),
             );
 
         }

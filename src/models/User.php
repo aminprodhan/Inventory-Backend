@@ -11,12 +11,11 @@
             else if(empty($password))
                 $msg="Password is required!!";
             else {
-                $sql = "SELECT * FROM `users` WHERE status=1 and user_name='" . $username . "' and password='" . $password . "'";
-                $data=$DBConnect->isValidLogin($sql);
+
+                $data=$DBConnect->isValidLogin($username,$password);
                 $msg="username or password is wrong!!!";
                 if(!empty($data["token_id"]))
                     $status=1;
-
             }
             $ara=array(
                 "status" => $status,

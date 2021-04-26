@@ -6,7 +6,8 @@
     $comm=new Common();
 
     $returnInfo=array(
-        "products" => array(),
+        "products" => [],
+        "orders" => [],
         "status" => 0,
         "msg" => "Something went wrong"
     );
@@ -16,9 +17,11 @@
         $tokenId=$_GET["tokenId"];
         $isValidToken=$comm->isValidToken($tokenId);
         if(!empty($isValidToken) && $isValidToken->role_id == 2){
+            $orders=$db->getMyOrders($isValidToken);
             $returnInfo=[
                 "products" => $db->getProducts(),
                 "imgProductUrl" => Common::productImgUrl(),
+                "orders" => $orders["all"],
             ];
         }
     }
