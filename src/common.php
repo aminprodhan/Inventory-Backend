@@ -3,7 +3,8 @@ namespace App;
 use \Firebase\JWT\JWT;
 use App\DBConn;
 use Intervention\Image\ImageManagerStatic as Image;
-
+use DateTime;
+use DateTimeZone;
 class Common{
     public static $encKey="amincpi";
     public static $rootFolder="Inventory-Backend";
@@ -13,6 +14,10 @@ class Common{
     }
     public static function decryptData($payload){
         return JWT::decode($payload, self::$encKey, array('HS256'));
+    }
+    public static function getCurrentDateTime(){
+        $date = new DateTime("now", new DateTimeZone('Asia/Dhaka') );
+        return $date->format('Y-m-d H:i:s');
     }
     public function isValidToken($token){
         $decoded = Common::decryptData($token);

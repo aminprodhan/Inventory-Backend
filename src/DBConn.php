@@ -2,8 +2,11 @@
 namespace App;
 use \Firebase\JWT\JWT;
 use App\Common;
+use PDO;
 class DBConn
 {
+    //https://websitebeaver.com/prepared-statements-in-php-mysqli-to-prevent-sql-injection
+    //https://websitebeaver.com/php-pdo-prepared-statements-to-prevent-sql-injection
 
     public $connection;
     protected $query;
@@ -16,16 +19,41 @@ class DBConn
     private $sDbPwd = '';
     public function __construct( $charset = 'utf8')
     {
-        $this->connection = new \mysqli($this->sDbHost, $this->sDbUser, $this->sDbPwd, $this->sDbName);
+        /*$this->connection = new \mysqli($this->sDbHost, $this->sDbUser, $this->sDbPwd, $this->sDbName);
         if ($this->connection->connect_error) {
             $this->error('Failed to connect to MySQL - ' . $this->connection->connect_error);
         }
-        $this->connection->set_charset($charset);
+        $this->connection->set_charset($charset);*/
+
+        $dsn = "mysql:host=$this->sDbHost;dbname=$this->sDbName;charset=utf8mb4";
+        $options = [
+            PDO::ATTR_EMULATE_PREPARES   => false, // turn off emulation mode for "real" prepared statements
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, //turn on errors in the form of exceptions
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, //make the default fetch be an associative array
+        ];
+        try {
+            $this->connection = new PDO($dsn, $this->sDbUser, $this->sDbPwd, $options);
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            exit('Something weird happened'); //something a user can understand
+        }
+
     }
     public function saveProduct($sql){
         $this->connection->query($sql);
     }
+    public function makeOrder($uInfo,$order_info){
+        $cid=$uInfo->uid;
+        $pid=$order_info->item["id"];$qty=$order_info->qty;
+        $cdate=Common::getCurrentDateTime();
+        $order_id=strtotime($cdate).$cid;
+        $stmt =$this->connection->prepare("INSERT INTO orders (customer_id, order_id,
+                                                product_id,qty,created_at) VALUES (?,?,?,?,?)");
 
+        $stmt->execute([$cid, $order_id,$pid,$qty,$cdate]);
+        $stmt=null;
+        return 1;
+    }
     public function updateTableData($table,$colUpdate=null,$colWhereParams=null){
         $whereCol="1";$defColUpdate="";
         if(!empty($colWhereParams)){
@@ -63,19 +91,25 @@ class DBConn
     }
     public function getProducts(){
         $sql="select p.*,c.`category_name`  from products as p join
-             inventory_categories as c on p.category_id=c.id where p.status=1 and p.trash=1";
-        $result_data = $this->connection->query($sql);
+             inventory_categories as c on p.category_id=c.id where p.status=? and p.trash=?";
+        $stmt =$this->connection->prepare($sql);
+        $stmt->execute([1,1]);
+        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $rows=[];
-        while($row = $result_data->fetch_assoc())
+        foreach($result_data as $row)
         {
             $rows[] = $row;
         }
         return $rows;
     }
     public function getCategories(){
-        $sql="select * from inventory_categories where status=1 and root_id=0";
-        $result_data = $this->connection->query($sql);
-        while($row = $result_data->fetch_assoc())
+
+        $sql="select * from inventory_categories where status=? and root_id=?";
+        $stmt =$this->connection->prepare($sql);
+        $stmt->execute([1,0]);
+        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows=[];
+        foreach($result_data as $row)
         {
             $rows[] = $row;
         }
