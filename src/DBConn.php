@@ -19,12 +19,6 @@ class DBConn
     private $sDbPwd = '';
     public function __construct( $charset = 'utf8')
     {
-        /*$this->connection = new \mysqli($this->sDbHost, $this->sDbUser, $this->sDbPwd, $this->sDbName);
-        if ($this->connection->connect_error) {
-            $this->error('Failed to connect to MySQL - ' . $this->connection->connect_error);
-        }
-        $this->connection->set_charset($charset);*/
-
         $dsn = "mysql:host=$this->sDbHost;dbname=$this->sDbName;charset=utf8mb4";
         $options = [
             PDO::ATTR_EMULATE_PREPARES   => false, // turn off emulation mode for "real" prepared statements
@@ -39,8 +33,13 @@ class DBConn
         }
 
     }
-    public function saveProduct($sql){
-        $this->connection->query($sql);
+    public function saveProduct($sql,$values){
+
+        $cdate=Common::getCurrentDateTime();
+        $stmt =$this->connection->prepare($sql);
+        $stmt->execute($values);
+        $stmt=null;
+        return 1;
     }
     public function updateMyOrderStatus($tokenInfo,$info){
         $status=$info->statusId;$inv_id=$info->item["id"];
@@ -49,8 +48,6 @@ class DBConn
         $stmt->execute([$status,$inv_id]);
         $stmt=null;
         return self::getMyOrders($tokenInfo);
-
-
     }
     public function getOrderStatuses(){
         $sql="select * from order_status_details order by sort_id asc";
@@ -95,7 +92,6 @@ class DBConn
         $order_id=$cid.strtotime($cdate);
         $stmt =$this->connection->prepare("INSERT INTO orders (customer_id, order_id,
                                                 product_id,qty,price,created_at) VALUES (?,?,?,?,?,?)");
-
         $stmt->execute([$cid, $order_id,$pid,$qty,$price,$cdate]);
         $stmt=null;
         return 1;
@@ -166,14 +162,14 @@ class DBConn
         $result_data = $this->connection->query($sql)->fetch_assoc();
         return $result_data;
     }
-    public function isValidLogin($username,$password){
+    public function isValidLogin($table,$username,$password,$role_id){
         $data=array(
             "token_id" => 0,
             "role_id" => 0,
         );
-        $sql = "SELECT * FROM `users` WHERE status=? and user_name=? and password=?";
+        $sql = "SELECT * FROM ".$table." WHERE status=? and user_name=? and password=? and role_id=?";
         $stmt = $this->connection->prepare($sql);
-        $stmt->execute([1,$username,$password]);
+        $stmt->execute([1,$username,$password,$role_id]);
         $result_data=$stmt->fetch();
         $stmt=null;
         if (!empty($result_data["id"]))
