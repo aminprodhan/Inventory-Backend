@@ -1,24 +1,23 @@
 <?php
 
-    use App\Common;
+    use App\Common;use App\models\Products;
     require '../../../vendor/autoload.php';
-    $comm=new Common();
-    $returnInfo=array(
-        "categories" => array(),
-        "products" => array(),
-        "status" => 0,
-        "msg" => "Something went wrong"
-    );
-    if(isset($_GET["token_id"]))
+    $returnInfo=["status" => 0, "msg" => "Something went wrong"];
+    if(isset($_GET["tokenId"]))
     {
-        $tokenId=$_GET["token_id"];
-        $info = $comm->getProductsInfo($tokenId);
-        if(!empty($info)){
-            $info["status"]=1;
-            $info["msg"]="success";
-            $info["imgProductUrl"]=Common::productImgUrl();
-            $returnInfo=$info;
+        $comm=new Common();
+        $tokenId = $_GET["tokenId"];
+        $isValidToken=$comm->isValidToken($tokenId);
+        if(!empty($isValidToken) && $isValidToken->role_id == 1) {
+            $products=new Products;
+            $info = $products->getProductsInfo($isValidToken);
+            if (!empty($info)) {
+                $info["status"] = 1;
+                $info["msg"] = "success";
+                $info["imgProductUrl"] = Common::productImgUrl();
+                $returnInfo = $info;
+            }
         }
     }
 
-    echo json_encode($returnInfo);
+    echo json_encode($info);

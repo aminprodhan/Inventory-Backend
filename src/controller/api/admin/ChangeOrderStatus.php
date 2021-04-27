@@ -6,11 +6,9 @@
     $comm=new Common();
     $jasonarray = json_decode(file_get_contents('php://input'),true);
     $msg="Something went wrong";$status=0;
-    $returnInfo=array(
-        "status" => $status,
-        "msg" => $msg,
-    );
-    if(isset($jasonarray["tokenId"])) {
+    $returnInfo=["status" => 0, "msg" => "Something went wrong",];
+    if(isset($jasonarray["tokenId"]) && isset($jasonarray["data"])
+        && isset($jasonarray["data"]["orderId"]) && isset($jasonarray["data"]["statusId"])) {
         $tokenId = $jasonarray["tokenId"];
         $isValidToken = $comm->isValidToken($tokenId);
         if(!empty($isValidToken) && $isValidToken->role_id == 1){

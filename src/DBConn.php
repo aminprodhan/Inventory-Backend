@@ -33,7 +33,7 @@ class DBConn
         }
 
     }
-    public function saveProduct($sql,$values){
+    public function queryExecute($sql,$values){
 
         $cdate=Common::getCurrentDateTime();
         $stmt =$this->connection->prepare($sql);
@@ -42,7 +42,7 @@ class DBConn
         return 1;
     }
     public function updateMyOrderStatus($tokenInfo,$info){
-        $status=$info->statusId;$inv_id=$info->item["id"];
+        $status=$info->statusId;$inv_id=$info->orderId;
         $sql="update orders set order_status=? where id=?";
         $stmt =$this->connection->prepare($sql);
         $stmt->execute([$status,$inv_id]);
@@ -96,40 +96,12 @@ class DBConn
         $stmt=null;
         return 1;
     }
-    public function updateTableData($table,$colUpdate=null,$colWhereParams=null){
-        $whereCol="1";$defColUpdate="";
-        if(!empty($colWhereParams)){
-            foreach ($colWhereParams as $key => $val){
-                $whereCol=$whereCol." and ".$key."='".$val."' ";
-            }
-        }
-        $araUpdateCol=array();
-        if(!empty($colUpdate)){
-            foreach ($colUpdate as $key => $val){
-                $araUpdateCol[]=" ".$key."='".$val."'";
-            }
-        }
-        $araUpdateCol=implode(',',$araUpdateCol);
-        $sql="update ".$table."  set ".$araUpdateCol." where ".$whereCol."";
-        //return $sql;
-        $status=$this->connection->query($sql);
-        return $status;
-    }
-    public function getInfo($table,$col=null,$colNotIn=null){
-        $whereCol="1";$def_not_in="";
-        if(!empty($col)){
-            foreach ($col as $key => $val){
-                $whereCol=$whereCol." and ".$key."='".$val."' ";
-            }
-        }
-        if(!empty($colNotIn)){
-            foreach ($colNotIn as $key => $val) {
-                $def_not_in = $def_not_in . " and " . $key . " not in (" . $val . ") ";
-            }
-        }
-        $sql="select * from ".$table." where ".$whereCol." ".$def_not_in." ";
-        $result_data = $this->connection->query($sql)->fetch_assoc();
-        return $result_data;
+    public function getInfo($sql,$values){
+        $stmt =$this->connection->prepare($sql);
+        $stmt->execute($values);
+        $results=$stmt->fetch();
+        $stmt=null;
+        return $results;
     }
     public function getProducts(){
         $sql="select p.*,c.`category_name`  from products as p join
@@ -157,11 +129,6 @@ class DBConn
         }
         return $rows;
     }
-    public function myOrders($uid,$type){
-        $sql="select * from inventory_categories where status=1 and root_id=0";
-        $result_data = $this->connection->query($sql)->fetch_assoc();
-        return $result_data;
-    }
     public function isValidLogin($table,$username,$password,$role_id){
         $data=array(
             "token_id" => 0,
@@ -175,17 +142,13 @@ class DBConn
         if (!empty($result_data["id"]))
         {
             $result_data;$msg="Success";$status=1;
-            $payload = array(
+            $payload =[
                 "uid" => $result_data["id"],
                 "role_id" => $result_data["role_id"],
-            );
-            $data=array(
-                "role_id" => $result_data["role_id"],
-                "name" => $result_data["name"],
-                "token_id" => Common::encrypttData($payload),
-                //"orders" => self::myOrders($result_data["id"],$result_data["role_id"]),
-            );
-
+            ];
+            $data["role_id"]=$result_data["role_id"];
+            $data["name"]=$result_data["name"];
+            $data["token_id"]=Common::encrypttData($payload);
         }
         return $data;
     }

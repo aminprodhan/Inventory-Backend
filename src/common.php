@@ -31,9 +31,14 @@ class Common{
         return $date->format('Y-m-d H:i:s');
     }
     public function isValidToken($token){
-        $decoded = Common::decryptData($token);
-        if(!empty($decoded->uid)){
-            return $decoded;
+        try {
+            $decoded = Common::decryptData($token);
+            if (!empty($decoded->uid)) {
+                return $decoded;
+            }
+        }
+        catch (\Exception $e){
+            return 0;
         }
         return 0;
     }
@@ -68,37 +73,7 @@ class Common{
             unlink($file);
         }
     }
-    public function isValidSKU($sku,$updateId=0){
-        $DBConnect=new DBConn();
-        $colWhere=array("sku" => $sku,"status" => 1);
-        $colWhereNotIn=array();
-        if(!empty($updateId))
-            $colWhereNotIn=["id"=>$updateId];
 
-        $isValidSku=$DBConnect->getInfo("products",$colWhere,$colWhereNotIn);
-        if(!empty($isValidSku["id"]))
-            return 0;
-        return 1;
-    }
 
-    public function getProductsInfo($tokenId){
-        $isValid = self::isValidToken($tokenId);
-        if(!empty($isValid)){
-            $uid=$isValid->uid;
-            $DBConnect=new DBConn();
-            $array_col=array(
-                "id" => $uid,
-                "status" => 1,
-            );
-            $users = $DBConnect->getInfo("users",$array_col);
-            if(!empty($users["id"])){
-                $role_id=$users["role_id"];
-                if($role_id == 1){
-                    return $results=array("products" => $DBConnect->getProducts(),"categories" => $DBConnect->getCategories());
-                }
-            }
-            return 0;
-        }
-        return 0;
-    }
+
 }
