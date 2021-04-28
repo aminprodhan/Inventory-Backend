@@ -10,9 +10,6 @@ class DBConn
 
     public $connection;
     protected $query;
-    protected $show_errors = TRUE;
-    protected $query_closed = TRUE;
-    public $query_count = 0;
     private  $sDbHost = 'localhost';
     private $sDbName = 'inv_orders';
     private $sDbUser = 'root';
@@ -41,98 +38,29 @@ class DBConn
         $stmt=null;
         return 1;
     }
-    public function updateMyOrderStatus($tokenInfo,$info){
-        $status=$info->statusId;$inv_id=$info->orderId;
-        $sql="update orders set order_status=? where id=?";
-        $stmt =$this->connection->prepare($sql);
-        $stmt->execute([$status,$inv_id]);
-        $stmt=null;
-        return self::getMyOrders($tokenInfo);
-    }
     public function getOrderStatuses(){
         $sql="select * from order_status_details order by sort_id asc";
-        $stmt =$this->connection->prepare($sql);
-        $stmt->execute();
-        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $stmt=null;$rows=[];
-        foreach($result_data as $row)
-            $rows[] = $row;
-        return $rows;
+        return self::getInfo($sql,[],1);
     }
-    public function getMyOrders($uInfo){
-        $sql="select o.*,s.name as status_name from orders as o 
-                join order_status_details as s on o.order_status=s.id order by o.id desc";
-        if($uInfo->role_id == 2) {
-            $sql = "select o.*,s.name as status_name from orders as o 
-                        join order_status_details as s on o.order_status=s.id
-                            where o.customer_id= ? order by o.id desc";
-        }
-        $stmt =$this->connection->prepare($sql);
-        if($uInfo->role_id == 2)
-            $stmt->execute([$uInfo->uid]);
-        else
-            $stmt->execute();
-        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $stmt=null;
-        $rows=[];$todaysOrder=[];$araStatus=[];
-        foreach($result_data as $row)
-            {
-                $araStatus[$row["order_status"]][]=$row;
-                $rows[] = $row;
-                if(Common::convertDateTimeToDate($row["created_at"]) == Common::getCurrentDate())
-                    $todaysOrder[]=$row;
-            }
-        $ara=["all" => $rows,"todays"=>$todaysOrder,"order_by_status" => $araStatus];
-        return $ara;
-    }
-    public function makeOrder($uInfo,$order_info){
-        $cid=$uInfo->uid;
-        $pid=$order_info->item["id"];$qty=$order_info->qty;$price=$order_info->item["price"];
-        $cdate=Common::getCurrentDateTime();
-        $order_id=$cid.strtotime($cdate);
-        $stmt =$this->connection->prepare("INSERT INTO orders (customer_id, order_id,
-                                                product_id,qty,price,created_at) VALUES (?,?,?,?,?,?)");
-        $stmt->execute([$cid, $order_id,$pid,$qty,$price,$cdate]);
-        $stmt=null;
-        return 1;
-    }
-    public function getInfo($sql,$values){
+    public function getInfo($sql,$values,$is_all=0){
         $stmt =$this->connection->prepare($sql);
         $stmt->execute($values);
-        $results=$stmt->fetch();
+        $results=$is_all > 0 ? $stmt->fetchAll(PDO::FETCH_ASSOC) : $stmt->fetch();
         $stmt=null;
         return $results;
     }
     public function getProducts(){
         $sql="select p.*,c.`category_name`  from products as p join
              inventory_categories as c on p.category_id=c.id where p.status=? and p.trash=?";
-        $stmt =$this->connection->prepare($sql);
-        $stmt->execute([1,1]);
-        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $rows=[];
-        foreach($result_data as $row)
-        {
-            $rows[] = $row;
-        }
-        return $rows;
+        return self::getInfo($sql,[1,1],1);
     }
     public function getCategories(){
-
         $sql="select * from inventory_categories where status=? and root_id=?";
-        $stmt =$this->connection->prepare($sql);
-        $stmt->execute([1,0]);
-        $result_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $rows=[];
-        foreach($result_data as $row)
-        {
-            $rows[] = $row;
-        }
-        return $rows;
+        return self::getInfo($sql,[1,0],1);
     }
     public function isValidLogin($table,$username,$password,$role_id){
         $data=array(
             "token_id" => 0,
-            "role_id" => 0,
         );
         $sql = "SELECT * FROM ".$table." WHERE status=? and user_name=? and password=? and role_id=?";
         $stmt = $this->connection->prepare($sql);

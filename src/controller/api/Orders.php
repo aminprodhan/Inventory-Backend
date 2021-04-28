@@ -1,23 +1,15 @@
 <?php
 
-    use App\Common;use App\DBConn;
+    use App\Common;use App\models\Orders;
     require '../../../vendor/autoload.php';
-    $comm=new Common();
     $msg="Something went wrong";$status=0;
-    $returnInfo=array(
-        "status" => $status,
-        "msg" => $msg,
-    );
+    $returnInfo=["status" => $status, "msg" => $msg];
     if(isset($_GET["tokenId"])) {
+        $comm=new Common();$order_model=new Orders();
         $tokenId=$_GET["tokenId"];
         $isValidToken=$comm->isValidToken($tokenId);
         if(!empty($isValidToken)) {
-            $db=new DBConn();
-            $oInfo=$db->getMyOrders($isValidToken);
-            $returnInfo["orders_today"]=$oInfo["todays"];
-            $returnInfo["orderStatuses"]=$db->getOrderStatuses();;
-            $returnInfo["orders"]=$oInfo["all"];
-            $returnInfo["orderByStatus"]=$oInfo["order_by_status"];
+            $returnInfo=$order_model->getMyOrders($isValidToken);
             $returnInfo["status"]=1;
             $returnInfo["msg"]="Success";
         }

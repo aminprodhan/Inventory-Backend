@@ -5,7 +5,7 @@
     $jasonarray = json_decode(file_get_contents('php://input'),true);
     $res["status"] = 0;
     $res["errors"] = array();
-    $res["msg"]="Something went wrong!!";
+    $res["msg"]=Common::getProductImagePath();
     if(isset($jasonarray["tokenId"]) && isset($jasonarray["data"])) {
         $comm=new Common();
         $tokenId=$jasonarray["tokenId"];

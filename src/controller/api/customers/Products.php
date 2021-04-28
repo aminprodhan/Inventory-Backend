@@ -1,27 +1,22 @@
 <?php
 
-    use App\Common;
-    use App\DBConn;
+    use App\Common;use App\models\Orders;use App\models\Products;
     require '../../../../vendor/autoload.php';
-    $comm=new Common();
-
-    $returnInfo=array(
-        "products" => [],
-        "orders" => [],
-        "status" => 0,
-        "msg" => "Something went wrong"
-    );
+    $returnInfo=["status" => 0, "msg" => "Something went wrong"];
     if(isset($_GET["tokenId"]))
     {
-        $db=new DBConn();
-        $tokenId=$_GET["tokenId"];
+        $comm=new Common();
+        $tokenId=$_GET["tokenId"];$returnInfo["msg"]="Token not found!!";
         $isValidToken=$comm->isValidToken($tokenId);
         if(!empty($isValidToken) && $isValidToken->role_id == 2){
-            $orders=$db->getMyOrders($isValidToken);
+            $order_model=new Orders();$products=new Products();
+            $orders=$order_model->getMyOrders($isValidToken);
             $returnInfo=[
-                "products" => $db->getProducts(),
+                "products" => $products->getProducts(),
                 "imgProductUrl" => Common::productImgUrl(),
-                "orders" => $orders["all"],
+                "orders" => $orders["orders"],
+                "msg" => "Success",
+                "status" => 1,
             ];
         }
     }
