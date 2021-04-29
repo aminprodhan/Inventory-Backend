@@ -6,6 +6,10 @@
     use DateTime;
     use DateTimeZone;
     class Common{
+        public  $db;
+        public function __construct(){
+            $this->db=new DBConn();
+        }
         public static $encKey="amincpi";
         public static $imgRoute="Inventory-Backend/src/product_images/";
         public static function encrypttData($payload){
@@ -33,7 +37,14 @@
             try {
                 $decoded = Common::decryptData($token);
                 if (!empty($decoded->uid)) {
-                    return $decoded;
+                    $sql="select * from admins where id=? and status=?";
+                    if($decoded->role_id == 2)
+                        $sql="select * from users where id=? and status=?";
+                    $values=[$decoded->uid,1];
+                    $isValidItem = $this->db->getInfo($sql,$values);
+                    if (!empty($isValidItem["id"])){
+                        return $decoded;
+                    }
                 }
             }
             catch (\Exception $e){
