@@ -13,7 +13,6 @@ return array(
     'App\\models\\Orders' => $baseDir . '/src/models/Orders.php',
     'App\\models\\Products' => $baseDir . '/src/models/Products.php',
     'App\\models\\User' => $baseDir . '/src/models/User.php',
-    'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'PHPUnit\\Exception' => $vendorDir . '/phpunit/phpunit/src/Exception.php',
     'PHPUnit\\Framework\\ActualValueIsNotAnObjectException' => $vendorDir . '/phpunit/phpunit/src/Framework/Exception/ActualValueIsNotAnObjectException.php',
     'PHPUnit\\Framework\\Assert' => $vendorDir . '/phpunit/phpunit/src/Framework/Assert.php',

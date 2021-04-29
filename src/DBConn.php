@@ -5,9 +5,6 @@ use App\Common;
 use PDO;
 class DBConn
 {
-    //https://websitebeaver.com/prepared-statements-in-php-mysqli-to-prevent-sql-injection
-    //https://websitebeaver.com/php-pdo-prepared-statements-to-prevent-sql-injection
-
     public $connection;
     protected $query;
     private  $sDbHost = 'localhost';
@@ -30,6 +27,12 @@ class DBConn
         }
 
     }
+    public function dbTruncate(){
+        $sql="TRUNCATE TABLE `products`";
+        self::queryExecute($sql,[]);
+        $sql="TRUNCATE TABLE `orders`";
+        self::queryExecute($sql,[]);
+    }
     public function queryExecute($sql,$values){
 
         $cdate=Common::getCurrentDateTime();
@@ -51,7 +54,7 @@ class DBConn
     }
     public function getProducts(){
         $sql="select p.*,c.`category_name`  from products as p join
-             inventory_categories as c on p.category_id=c.id where p.status=? and p.trash=?";
+             inventory_categories as c on p.category_id=c.id where p.status=? and p.trash=? order by p.id desc";
         return self::getInfo($sql,[1,1],1);
     }
     public function getCategories(){
